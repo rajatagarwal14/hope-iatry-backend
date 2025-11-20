@@ -1,0 +1,93 @@
+═══════════════════════════════════════════════════════════════
+  HOPE-IATRY AI COACHING PLATFORM - QUICK START
+═══════════════════════════════════════════════════════════════
+
+⚡ SUPER FAST SETUP (5 MINUTES):
+
+1. INSTALL DEPENDENCIES
+   Open terminal/command prompt in this folder:
+   
+   pip install -r requirements.txt
+
+2. GET API KEY
+   Go to: https://console.groq.com/
+   Sign up (FREE, no credit card) → Get API key
+   (Key starts with gsk_...)
+
+3. CONFIGURE
+   Copy .env.example to .env:
+   
+   Windows: copy .env.example .env
+   Mac/Linux: cp .env.example .env
+   
+   Open .env and paste your API key:
+   GROQ_API_KEY=gsk-your-key-here
+
+4. RUN
+   Windows: Double-click start.bat
+   Mac/Linux: ./start.sh
+   
+   OR manually: python backend.py
+
+5. OPEN BROWSER
+   Go to: http://localhost:5000
+
+═══════════════════════════════════════════════════════════════
+
+🌐 LET OTHERS ACCESS:
+
+1. Find your IP address:
+   Windows: ipconfig
+   Mac: ifconfig | grep "inet "
+   Linux: hostname -I
+
+2. Share this URL: http://YOUR_IP_ADDRESS:5000
+   (They must be on the same WiFi network)
+
+═══════════════════════════════════════════════════════════════
+
+🎯 DEMO FLOW:
+
+1. Register a user
+2. Choose Life Coach or Career Coach  
+3. Chat with AI
+4. Try: "I'm feeling depressed" (triggers guardrails)
+5. Admin Login (password: admin123)
+6. See flagged users
+7. Export to CSV
+
+═══════════════════════════════════════════════════════════════
+
+🔧 TROUBLESHOOTING:
+
+Problem: "Module not found"
+Fix: pip install -r requirements.txt --upgrade
+
+Problem: "Port already in use"  
+Fix: Change port=5000 to port=5001 in backend.py
+
+Problem: "API key not configured"
+Fix: Check .env file exists and has correct key (starts with gsk_)
+
+Problem: Others can't access
+Fix: Allow Python through firewall (see README.md)
+
+═══════════════════════════════════════════════════════════════
+
+✅ WHAT'S INCLUDED:
+
+✓ Your Hope-iatry logo integrated
+✓ Life Wellness Coach chatbot
+✓ Career Coach chatbot
+✓ Clinical content guardrails
+✓ User registration system
+✓ Admin dashboard
+✓ CSV export
+✓ Real Groq AI integration (FREE & FAST!)
+✓ Uses Llama 3.1 70B model
+
+═══════════════════════════════════════════════════════════════
+
+📚 For detailed instructions, see README.md
+
+═══════════════════════════════════════════════════════════════

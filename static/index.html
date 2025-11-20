@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hope-iatry - AI Coaching Platform</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-0.5rem); }
+        }
+        .animate-bounce {
+            animation: bounce 1s infinite;
+        }
+        .logo-container {
+            background: #1e5a4c;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo {
+            max-height: 60px;
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script>
+        // Simple vanilla JS implementation (no React needed for this)
+        
+        let currentView = 'landing';
+        let chatMode = null;
+        let messages = [];
+        let currentUser = null;
+        let allUsers = [];
+        
+        const API_BASE = window.location.origin;
+        
+        // SVG Icons as strings
+        const icons = {
+            heart: `<svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>`,
+            briefcase: `<svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>`,
+            alert: `<svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
+            send: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>`,
+            x: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`,
+            users: `<svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>`,
+            alertTriangle: `<svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
+            logout: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>`
+        };
+        
+        function render() {
+            const root = document.getElementById('root');
+            
+            if (currentView === 'landing') {
+                root.innerHTML = renderLanding();
+                attachLandingListeners();
+            } else if (currentView === 'chat') {
+                root.innerHTML = renderChat();
+                attachChatListeners();
+            } else if (currentView === 'admin') {
+                root.innerHTML = renderAdmin();
+                attachAdminListeners();
+            }
+        }
+        
+        function renderLanding() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+                    <!-- Header with Logo -->
+                    <header class="logo-container shadow-sm">
+                        <img src="/static/logo.png" alt="Hope-iatry" class="logo" />
+                    </header>
+                    
+                    <main class="max-w-6xl mx-auto px-4 py-12">
+                        <div class="text-center mb-16">
+                            <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                                Welcome to Your Personal Growth Journey
+                            </h2>
+                            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                                Access free AI-powered coaching for life wellness and career development. 
+                                Get personalized guidance, build better habits, and achieve your goals.
+                            </p>
+                        </div>
+                        
+                        ${!currentUser ? `
+                        <div class="bg-white rounded-2xl shadow-xl p-8 mb-12 max-w-2xl mx-auto">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">
+                                Get Started - Free Registration
+                            </h3>
+                            <form id="registrationForm" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                                    <input type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="John Doe">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                                    <input type="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="john@example.com">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                                    <input type="tel" name="phone" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="(555) 123-4567">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Mailing Address *</label>
+                                    <input type="text" name="address" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="123 Main St, City, State ZIP">
+                                </div>
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-gray-700">
+                                    <p class="mb-2"><strong>Privacy Notice:</strong> Your information will be used to provide you with coaching services and wellness resources.</p>
+                                    <label class="flex items-start gap-2">
+                                        <input type="checkbox" required class="mt-1">
+                                        <span>I consent to Hope-iatry collecting and storing my information for coaching services.</span>
+                                    </label>
+                                </div>
+                                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                                    Register & Start Coaching
+                                </button>
+                            </form>
+                        </div>
+                        ` : `
+                        <div>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2 text-center">
+                                Hi ${currentUser.name}! Choose Your Coach
+                            </h3>
+                            <p class="text-gray-600 mb-8 text-center">Select the coaching service you'd like to use today</p>
+                            
+                            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                                <div class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow">
+                                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                                        ${icons.heart}
+                                    </div>
+                                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Life Wellness Coach</h3>
+                                    <p class="text-gray-600 mb-6">Get personalized guidance for daily wellness, mindfulness, stress management, and building healthy habits.</p>
+                                    <ul class="space-y-2 mb-6 text-sm text-gray-700">
+                                        <li>✓ Daily wellness strategies</li>
+                                        <li>✓ Stress management tips</li>
+                                        <li>✓ Healthy habit building</li>
+                                        <li>✓ Work-life balance guidance</li>
+                                    </ul>
+                                    <button onclick="startChat('life')" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors">
+                                        Start Life Coaching
+                                    </button>
+                                </div>
+                                
+                                <div class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow">
+                                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                                        ${icons.briefcase}
+                                    </div>
+                                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Career Coach</h3>
+                                    <p class="text-gray-600 mb-6">Professional guidance for resume building, interview prep, job searching, and career advancement.</p>
+                                    <ul class="space-y-2 mb-6 text-sm text-gray-700">
+                                        <li>✓ Resume optimization</li>
+                                        <li>✓ Interview preparation</li>
+                                        <li>✓ Job search strategies</li>
+                                        <li>✓ Career planning & goals</li>
+                                    </ul>
+                                    <button onclick="startChat('career')" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                                        Start Career Coaching
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        `}
+                        
+                        <div class="mt-12 bg-amber-50 border border-amber-200 rounded-xl p-6 max-w-3xl mx-auto">
+                            <div class="flex gap-3">
+                                ${icons.alert}
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 mb-2">Important Notice</h4>
+                                    <p class="text-sm text-gray-700">
+                                        These AI coaches provide general guidance and are not a substitute for professional mental health care. 
+                                        If you're experiencing a mental health crisis or need clinical support, please contact a licensed therapist at Hope-iatry directly.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-8">
+                            <button onclick="showAdmin()" class="text-sm text-gray-500 hover:text-gray-700">Admin Login</button>
+                        </div>
+                    </main>
+                </div>
+            `;
+        }
+        
+        function renderChat() {
+            return `
+                <div class="min-h-screen bg-gray-50 flex flex-col">
+                    <header class="bg-white shadow-sm">
+                        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 ${chatMode === 'life' ? 'bg-green-100' : 'bg-blue-100'} rounded-full flex items-center justify-center">
+                                    ${chatMode === 'life' ? icons.heart.replace('w-8 h-8', 'w-6 h-6') : icons.briefcase.replace('w-8 h-8', 'w-6 h-6')}
+                                </div>
+                                <div>
+                                    <h2 class="font-bold text-gray-900">${chatMode === 'life' ? 'Life Wellness Coach' : 'Career Coach'}</h2>
+                                    <p class="text-sm text-gray-500">Hope-iatry AI Coaching</p>
+                                </div>
+                            </div>
+                            <button onclick="closeChat()" class="text-gray-600 hover:text-gray-900">
+                                ${icons.x}
+                            </button>
+                        </div>
+                    </header>
+                    
+                    <div id="messages-container" class="flex-1 overflow-y-auto px-4 py-6">
+                        <div class="max-w-3xl mx-auto space-y-4" id="messages">
+                            ${messages.map(msg => `
+                                <div class="flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}">
+                                    <div class="max-w-[80%] rounded-2xl px-4 py-3 ${
+                                        msg.role === 'user' 
+                                            ? 'bg-blue-600 text-white' 
+                                            : msg.flagged
+                                            ? 'bg-amber-50 border-2 border-amber-200 text-gray-900'
+                                            : 'bg-white text-gray-900 shadow-sm'
+                                    }">
+                                        <p class="whitespace-pre-wrap">${msg.content}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                            <div id="loading" style="display: none;" class="flex justify-start">
+                                <div class="bg-white rounded-2xl px-4 py-3 shadow-sm">
+                                    <div class="flex gap-1">
+                                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms;"></div>
+                                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white border-t border-gray-200 px-4 py-4">
+                        <div class="max-w-3xl mx-auto flex gap-2">
+                            <input 
+                                type="text" 
+                                id="messageInput"
+                                placeholder="Type your message..."
+                                class="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <button 
+                                onclick="sendMessage()"
+                                id="sendBtn"
+                                class="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-colors">
+                                ${icons.send}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderAdmin() {
+            return `
+                <div class="min-h-screen bg-gray-50">
+                    <header class="bg-white shadow-sm">
+                        <div class="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
+                            <div>
+                                <h1 class="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                                <p class="text-sm text-gray-600">Hope-iatry Coaching Platform</p>
+                            </div>
+                            <button onclick="closeAdmin()" class="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                                ${icons.logout}
+                                Logout
+                            </button>
+                        </div>
+                    </header>
+                    
+                    <main class="max-w-7xl mx-auto px-4 py-8">
+                        <div class="grid md:grid-cols-4 gap-6 mb-8">
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center justify-between mb-2">
+                                    ${icons.users}
+                                    <span class="text-3xl font-bold text-gray-900">${allUsers.length}</span>
+                                </div>
+                                <p class="text-gray-600">Total Users</p>
+                            </div>
+                            
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center justify-between mb-2">
+                                    ${icons.alertTriangle}
+                                    <span class="text-3xl font-bold text-gray-900">${allUsers.filter(u => u.flagged_for_services).length}</span>
+                                </div>
+                                <p class="text-gray-600">Flagged for Services</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                                <h2 class="text-xl font-bold text-gray-900">All Registered Users</h2>
+                                <button onclick="exportUsers()" class="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                    Export to CSV
+                                </button>
+                            </div>
+                            
+                            ${allUsers.length === 0 ? `
+                                <div class="p-8 text-center text-gray-500">No users registered yet.</div>
+                            ` : `
+                                <div class="overflow-x-auto">
+                                    <table class="w-full">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Conversations</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200">
+                                            ${allUsers.map(user => `
+                                                <tr class="${user.flagged_for_services ? 'bg-red-50' : ''}">
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="font-medium text-gray-900">${user.name}</div>
+                                                        <div class="text-sm text-gray-500">${user.address}</div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="text-sm text-gray-900">${user.email}</div>
+                                                        <div class="text-sm text-gray-500">${user.phone}</div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        ${user.conversations_count || 0} conversations
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        ${user.flagged_for_services 
+                                                            ? '<span class="text-red-600 font-semibold text-sm">⚠️ Needs Services</span>'
+                                                            : '<span class="text-green-600 text-sm">Active</span>'
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `}
+                        </div>
+                    </main>
+                </div>
+            `;
+        }
+        
+        function attachLandingListeners() {
+            const form = document.getElementById('registrationForm');
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    
+                    const response = await fetch(`${API_BASE}/api/register`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            name: formData.get('name'),
+                            email: formData.get('email'),
+                            phone: formData.get('phone'),
+                            address: formData.get('address')
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        currentUser = data.user;
+                        render();
+                    } else {
+                        alert('Registration failed: ' + data.error);
+                    }
+                });
+            }
+        }
+        
+        function attachChatListeners() {
+            const input = document.getElementById('messageInput');
+            if (input) {
+                input.focus();
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') sendMessage();
+                });
+            }
+        }
+        
+        function attachAdminListeners() {
+            // Nothing to attach for admin
+        }
+        
+        window.startChat = function(mode) {
+            chatMode = mode;
+            messages = [{
+                role: 'assistant',
+                content: mode === 'life' 
+                    ? "Hello! 👋 I'm your Life Wellness Coach. I help with daily habits, stress management, and self-care routines.\n\nWhat wellness goal would you like to work on today?"
+                    : "Hello! 👋 I'm your Career Coach. I help with resumes, interviews, job searches, and career planning.\n\nWhat career challenge can I help you with today?",
+                timestamp: new Date().toISOString()
+            }];
+            currentView = 'chat';
+            render();
+        };
+        
+        window.sendMessage = async function() {
+            const input = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const loading = document.getElementById('loading');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            input.value = '';
+            input.disabled = true;
+            sendBtn.disabled = true;
+            
+            messages.push({
+                role: 'user',
+                content: message,
+                timestamp: new Date().toISOString()
+            });
+            
+            render();
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_id: currentUser.id,
+                        message: message,
+                        mode: chatMode,
+                        history: messages.slice(0, -1)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    messages.push({
+                        role: 'assistant',
+                        content: data.response,
+                        flagged: data.flagged,
+                        timestamp: new Date().toISOString()
+                    });
+                } else {
+                    messages.push({
+                        role: 'assistant',
+                        content: 'Error: ' + data.error,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            } catch (error) {
+                messages.push({
+                    role: 'assistant',
+                    content: 'Connection error. Please check if the backend server is running.',
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            loading.style.display = 'none';
+            input.disabled = false;
+            sendBtn.disabled = false;
+            render();
+            
+            const messagesEl = document.getElementById('messages-container');
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        };
+        
+        window.closeChat = function() {
+            currentView = 'landing';
+            messages = [];
+            chatMode = null;
+            render();
+        };
+        
+        window.showAdmin = function() {
+            const pwd = prompt('Enter admin password:');
+            if (pwd === 'admin123') {
+                loadAdminData();
+            }
+        };
+        
+        async function loadAdminData() {
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/users`);
+                const data = await response.json();
+                if (data.success) {
+                    allUsers = data.users;
+                    currentView = 'admin';
+                    render();
+                }
+            } catch (error) {
+                alert('Failed to load admin data');
+            }
+        }
+        
+        window.closeAdmin = function() {
+            currentView = 'landing';
+            render();
+        };
+        
+        window.exportUsers = async function() {
+            window.open(`${API_BASE}/api/admin/export`, '_blank');
+        };
+        
+        // Initialize
+        render();
+    </script>
+</body>
+</html>
